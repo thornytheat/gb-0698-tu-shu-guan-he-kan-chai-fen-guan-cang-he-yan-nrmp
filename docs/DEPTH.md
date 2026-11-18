@@ -14,6 +14,7 @@
 | M5 缺期定位 | 运行缺期定位并核对证据 | `POST /api/5` | `app/modules/m5_gaps/rules.py` | `tests/test_gaps.py` |
 | M6 装订对账 | 运行装订对账并核对证据 | `POST /api/6` | `app/modules/m6_binding/rules.py` | `tests/test_binding.py` |
 | M7 补录复核 | 运行补录复核并核对证据 | `POST /api/7` | `app/modules/m7_supplement/rules.py` | `tests/test_supplement.py` |
+| M8 版本发布 | 发布年度批次并追查跨馆借阅单 | `POST /api/8/publish` | `app/modules/m8_publish/store.py` | `tests/test_publish.py` |
 
 ## 陷阱登记
 
@@ -27,6 +28,9 @@
 | TRAP-17 | 刊名演进 | 静默采信错误值 | 别名映射 | `app/modules/m2_titles/rules.py` | `tests/test_titles.py::test_title_alias` |
 | TRAP-22 | 多别名 | 静默采信错误值 | 确定代表名 | `app/modules/m2_titles/rules.py` | `tests/test_titles.py::test_title_spaces` |
 | TRAP-23 | 停刊区间 | 静默采信错误值 | 缺期集合剔除 | `app/modules/m5_gaps/rules.py` | `tests/test_gaps.py::test_gap_suspended` |
+| TRAP-25 | 年度更新改目录 | 旧借阅单换指或新请求指向已撤期次 | 版本化发布，旧单固定出借时版本，新请求按当前版本校验 | `app/modules/m8_publish/store.py` | `tests/test_publish.py::test_loan_pins_original_version` |
+| TRAP-26 | 切换中途失败 | 目录半新半旧 | 写入与切换同事务，失败回滚保留上一版 | `app/modules/m8_publish/store.py` | `tests/test_publish.py::test_publish_switch_failure_keeps_previous` |
+| TRAP-27 | 重跑同一批次 | 版本膨胀漂移 | 内容摘要去重，复用旧版本 | `app/modules/m8_publish/rules.py` | `tests/test_publish.py::test_publish_same_batch_reuses_version` |
 
 ## 对账规则
 
@@ -34,4 +38,4 @@
 
 ## 已知不覆盖
 
-不支持超过2MB输入，不执行生产自动放行；异常值需人员复核。
+不支持超过2MB输入，不执行生产自动放行，不生成采购订单；异常值需人员复核。

@@ -1,0 +1,10 @@
+const editor=document.getElementById('content'),message=document.getElementById('message'),loanMessage=document.getElementById('loan-message');
+document.getElementById('file').addEventListener('change',async function(){if(!this.files[0])return;const data=await this.files[0].arrayBuffer();let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(data)}catch{text=new TextDecoder('gb18030').decode(data)}editor.value=text});
+async function commit(url,data){const reply=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}),body=await reply.json();if(!reply.ok)throw new Error(body.message||'操作失败，请检查记录');return body}
+async function demo(key){try{const s=await(await fetch('/api/8/sample')).json();editor.value=s[key];message.textContent='样例已载入'}catch{message.textContent='读取失败，请重试'}}
+document.getElementById('demo-base').onclick=()=>demo('base');
+document.getElementById('demo-update').onclick=()=>demo('update');
+document.getElementById('publish-form').addEventListener('submit',async e=>{e.preventDefault();e.submitter.disabled=true;message.textContent='正在发布…';try{const r=await commit('/api/8/publish',{text:editor.value});message.textContent=(r.reused?'复用版本 V':'已发布并切换 V')+r.version+' · 当前 V'+r.current;setTimeout(()=>location.reload(),700)}catch(err){message.textContent=err.message;e.submitter.disabled=false}});
+document.getElementById('loan-form').addEventListener('submit',async e=>{e.preventDefault();e.submitter.disabled=true;try{const data=Object.fromEntries(new FormData(e.target));const r=await commit('/api/8/loans',data);loanMessage.textContent='已出借 · 单号 '+r.id.slice(0,8)+' · 固定 V'+r.version;setTimeout(()=>location.reload(),700)}catch(err){loanMessage.textContent=err.message;e.submitter.disabled=false}});
+document.querySelectorAll('[data-return]').forEach(b=>b.onclick=async()=>{try{await commit('/api/8/loans/'+b.dataset.return+'/return',{});location.reload()}catch(err){loanMessage.textContent=err.message}});
+document.getElementById('print').addEventListener('click',()=>window.print());

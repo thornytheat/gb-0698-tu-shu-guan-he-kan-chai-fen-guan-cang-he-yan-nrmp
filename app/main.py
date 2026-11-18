@@ -11,8 +11,8 @@ import importlib
 app=FastAPI(title='图书馆合刊拆分与馆藏核验')
 app.mount("/static",StaticFiles(directory=Path(__file__).parent/"static"),name="static")
 templates=Jinja2Templates(directory=Path(__file__).parent/"templates")
-MODULES=['馆藏接收', '刊名归一', '卷期展开', '合刊裁决', '缺期定位', '装订对账', '补录复核']
-for n,slug in enumerate(['receive', 'titles', 'issues', 'combined', 'gaps', 'binding', 'supplement'],1):
+MODULES=['馆藏接收', '刊名归一', '卷期展开', '合刊裁决', '缺期定位', '装订对账', '补录复核', '版本发布']
+for n,slug in enumerate(['receive', 'titles', 'issues', 'combined', 'gaps', 'binding', 'supplement', 'publish'],1):
     app.include_router(importlib.import_module(f"app.modules.m{n}_{slug}.handler").router)
 @app.exception_handler(BusinessError)
 async def domain_error(request,exc):
@@ -23,9 +23,12 @@ def health(): return {"status":"ok"}
 def home(request:Request): return page(request,1)
 @app.get("/module/{module}",response_class=HTMLResponse)
 def page(request:Request,module:int):
-    if module not in range(1,8): raise BusinessError("MODULE","模块不存在",404)
+    if module not in range(1,9): raise BusinessError("MODULE","模块不存在",404)
     ident=request.query_params.get("run_id")
     item=store.get(ident) if ident else store.save(sample_text(),run(sample_text()))
+    if module==8:
+        from app.modules.m8_publish import service as publish_service, store as publish_store
+        return templates.TemplateResponse(request=request,name="publish.html",context={"title":'图书馆合刊拆分与馆藏核验',"modules":MODULES,"active":module,"run":item,"current":publish_store.current(),"versions":publish_store.versions(),"loans":publish_service.track()})
     return templates.TemplateResponse(request=request,name="workbench.html",context={"title":'图书馆合刊拆分与馆藏核验',"modules":MODULES,"active":module,"run":item,"report":item["result"]["reports"][module-1]})
 @app.post("/api/run")
 def calculate(payload:object=Body(default=None)):
